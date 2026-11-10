@@ -1,0 +1,8 @@
+# The one secret your store needs. The Deploy to Cloudflare button asks for it
+# and saves it as a Worker secret; for local development copy this file to
+# .dev.vars (never committed) and fill it in.
+#
+# Generate it with:   npx emdash secrets generate
+# It encrypts the payment keys you enter in the admin. Keep a copy in your
+# password manager: if it is lost, those keys must be entered again.
+EMDASH_ENCRYPTION_KEY=

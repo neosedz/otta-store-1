@@ -1,0 +1,54 @@
+{
+	"name": "otta-store-1",
+	"version": "0.0.0",
+	"private": true,
+	"description": "An Otta store on Cloudflare Workers: EmDash CMS plus Otta commerce, as one Worker with D1, R2 and KV.",
+	"type": "module",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"deploy": "node scripts/deploy.mjs",
+		"test": "node --test scripts/deploy.test.mjs"
+	},
+	"dependencies": {
+		"@astrojs/cloudflare": "14.1.2",
+		"@astrojs/react": "6.0.1",
+		"@emdash-cms/cloudflare": "1.3.1",
+		"@urumi.ai/otta-admin-react": "0.2.0",
+		"@urumi.ai/otta-plugin": "0.2.0",
+		"@urumi.ai/otta-store": "0.2.0",
+		"astro": "7.3.6",
+		"emdash": "1.3.1",
+		"react": "19.2.7",
+		"react-dom": "19.2.7"
+	},
+	"devDependencies": {
+		"wrangler": "4.159.0"
+	},
+	"engines": {
+		"node": ">=22.16"
+	},
+	"emdash": {
+		"seed": "node_modules/@urumi.ai/otta-store/seed/seed.json"
+	},
+	"cloudflare": {
+		"bindings": {
+			"EMDASH_ENCRYPTION_KEY": {
+				"description": "Encrypts the payment keys you enter in the admin. Generate one with `npx emdash secrets generate` (or `node -e \"console.log('emdash_enc_v1_'+require('crypto').randomBytes(32).toString('base64url'))\"`) and **keep a copy in your password manager**: without it the saved keys cannot be read."
+			},
+			"DB": {
+				"description": "The store's database: CMS content and every order, cart and customer."
+			},
+			"MEDIA": {
+				"description": "Product images and other media. Served publicly by the store."
+			},
+			"DOWNLOADS": {
+				"description": "Files buyers pay for. **Must be a different bucket from MEDIA, and must stay private:** never turn on its r2.dev URL or connect a domain to it."
+			},
+			"SESSION": {
+				"description": "Admin sign-in sessions."
+			}
+		}
+	}
+}

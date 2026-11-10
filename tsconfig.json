@@ -1,0 +1,5 @@
+{
+	"extends": "astro/tsconfigs/strict",
+	"include": [".astro/types.d.ts", "emdash-env.d.ts", "src", "astro.config.mjs"],
+	"exclude": ["dist", ".wrangler", "node_modules"]
+}

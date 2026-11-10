@@ -1,0 +1,88 @@
+// Your store's Worker. The Deploy to Cloudflare button creates the database,
+// buckets and namespace below and writes their real IDs into your copy of this
+// file. `npm run build` reads it; `npm run deploy` (scripts/deploy.mjs) then
+// applies the database migrations and runs plain `wrangler deploy` on what the
+// build produced — never add `--config` there.
+//
+// Secrets never go in this file. The store's one required secret,
+// EMDASH_ENCRYPTION_KEY, is a Worker secret (see .dev.vars.example). Two more
+// are optional: OTTA_SETUP_TOKEN and OTTA_WH_TOKEN.
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "otta-store-1",
+	"main": "./src/worker.ts",
+	"compatibility_date": "2026-02-24",
+	// Do NOT add `global_fetch_strictly_public`: the store uses D1 sessions, and
+	// that flag stalls them (Otta DEPLOYMENT.md §2.4).
+	"compatibility_flags": ["nodejs_compat"],
+	// No Version URLs (<version>-<name>.<subdomain>.workers.dev; Cloudflare keeps
+	// the old name "preview_urls" for this setting). A Version URL runs on the
+	// production resources, including this store's LIVE database, so its first
+	// request could run that version's database changes against your live data.
+	// README.md, step 1, also turns off non-production branch builds.
+	"preview_urls": false,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "otta-store-db",
+			"database_id": "22226a56-fe4b-423b-87ad-87453a793b5e",
+		},
+	],
+	"r2_buckets": [
+		{
+			// Product images and other media. The store serves every file in this
+			// bucket publicly.
+			"binding": "MEDIA",
+			"bucket_name": "otta-store-media","preview_bucket_name": "otta-store-media",
+		},
+		{
+			// PRIVATE: the files buyers pay for. The store is its only reader and
+			// re-checks the buyer's purchase on every download. It MUST be a
+			// different bucket from MEDIA (the build refuses one shared bucket).
+			// NEVER turn on its r2.dev "Public Development URL" and never connect a
+			// custom domain to it.
+			"binding": "DOWNLOADS",
+			"bucket_name": "otta-store-downloads","preview_bucket_name": "otta-store-downloads",
+		},
+	],
+	// Admin sign-in sessions (EmDash keeps signed-in users in the Astro session).
+	"kv_namespaces": [
+		{
+			"binding": "SESSION",
+			"id": "bdbe20de25dc4373a21650a177d1e0e1",
+		},
+	],
+	// Image resizing for product photos (Astro's default image service on
+	// Cloudflare). Cloudflare Images includes a monthly free allowance.
+	"images": {
+		"binding": "IMAGES",
+	},
+	// Per-IP limits on anonymous writes (cart, checkout) and sign-in requests.
+	// Cash on delivery is only offered with RATE_LIMIT_WRITES. Each namespace_id
+	// is a number of your choosing, unique in your Cloudflare account; two
+	// Workers that share one share its counters. A second store in the same
+	// account also needs its own Worker, database, bucket and KV names. `period` must stay 60.
+	"ratelimits": [
+		{ "name": "RATE_LIMIT_AUTH", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+		{ "name": "RATE_LIMIT_WRITES", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } },
+	],
+	// OPTIONAL, order and sign-in email through Cloudflare Email Sending. Needs
+	// Workers Paid and a sender domain on Cloudflare. Uncomment it FIRST, then
+	// set the sender (README.md, "Email"); the build refuses a sender without it.
+	// "send_email": [{ "name": "EMAIL" }],
+	// Console logs stay on: before you claim the store, its setup link is written
+	// there. Invocation logs stay off: they would store request URLs that can
+	// carry Stripe's payment_intent_client_secret.
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"invocation_logs": false,
+		},
+	},
+	// Every minute: scheduled publishing, expiring stock holds and the order
+	// email queue. Do not slow it down.
+	"triggers": {
+		"crons": ["* * * * *"],
+	},
+}
